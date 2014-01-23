@@ -17,6 +17,7 @@
     oracle@yjsdb_standby:/oracle/ORABACKUP/archivelog/backupfile$rm *
 
 清除已有的数据文件，日志文件
+
     oracle@yjsdb_standby:/oradata/yjsdbstb$ cd /oradata/yjsdbstb
     oracle@yjsdb_standby:/oradata/yjsdbstb$ pwd
     /oradata/yjsdbstb
