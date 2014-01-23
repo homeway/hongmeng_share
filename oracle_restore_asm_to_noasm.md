@@ -1,8 +1,27 @@
 #如何将Oracle数据从ASM环境恢复到Non-ASM环境？
 本文讲述如何将Oracle数据从`RAC+ASM`环境备份的数据恢复到`单机+Non-ASM`的环境。
 
-###第1步 备份
-使用`rman`命令将生产机的数据文件和归档日志一起备份。
+###第1步 在SCP之前先删除备份机上的旧的备份文件    
+清除数据文件备份片：
+
+    oracle@yjsdb_standby:/oracle/ORABACKUP/database/backupfile$cd /oracle/ORABACKUP/database/backupfile
+    oracle@yjsdb_standby:/oracle/ORABACKUP/database/backupfile$ pwd
+    /oracle/ORABACKUP/database/backupfile
+    oracle@yjsdb_standby:/oracle/ORABACKUP/database/backupfile$rm *
+
+清除归档日志文件备份片
+
+    oracle@yjsdb_standby:/oracle/ORABACKUP/database/backupfile$cd /oracle/ORABACKUP/archivelog/backupfile
+    oracle@yjsdb_standby:/oracle/ORABACKUP/archivelog/backupfile$ pwd
+    /oracle/ORABACKUP/archivelog/backupfile
+    oracle@yjsdb_standby:/oracle/ORABACKUP/archivelog/backupfile$rm *
+
+清除已有的数据文件，日志文件
+    oracle@yjsdb_standby:/oradata/yjsdbstb$ cd /oradata/yjsdbstb
+    oracle@yjsdb_standby:/oradata/yjsdbstb$ pwd
+    /oradata/yjsdbstb
+    oracle@yjsdb_standby:/oradata/yjsdbstb$rm */*    --保留yjsdbstb的四个文件夹
+
 
 ###第2步 COPY备份文件到到冷备机
 假设备份文件在主机`10.20.2.101`的目录`root/nfcq_1020`：
@@ -13,7 +32,7 @@
 
     oracle@yjsdb1:/oracle/ORABACKUP/database/backupfile$ scp * 10.20.1.90:/oracle/ORABACKUP/database/backupfile
 
-###第3步 确保pfile文件`inityjsdb.ora`中已增加路径转换的设置
+###第3步 确保pfile文件`yjs_init.ora`中已增加路径转换的设置
 
 这是其中关键的两行，用来将AMS环境中的路径批量替换为Non-ASM的路径：
 
@@ -22,7 +41,7 @@
 
 完整的pfile文件大概像这样：
 
-    oracle@yjsdb_standby:/oracle/product/11.2.0/dbhome_1/dbs$ cat inityjsdb.ora
+    oracle@yjsdb_standby:/oracle/product/11.2.0/dbhome_1/dbs$ cat yjs_init.ora.ora
 
     yjsdb.__db_cache_size=1325400064
     yjsdb.__java_pool_size=16777216
@@ -56,7 +75,7 @@
 ###第4步 恢复数据文件
 
     # sqlplus '/as sysdba'
-    SQL> startup nomount pfile='/oracle/product/11.2.0/dbhome_1/dbs/inityjsdb.ora';
+    SQL> startup nomount pfile='/oracle/product/11.2.0/dbhome_1/dbs/yjs_init.ora';
     SQL> exit;
 
     #rman target /
@@ -124,7 +143,6 @@
 至此，若全程无任何报错，数据就应已正常恢复。
 
 ###第6步 修改已恢复数据中的日志文件路径
-（若无此步骤，启动时将出现ORA-03113错误）
 
 列出已恢复数据中的日志文件路径：
 
@@ -151,19 +169,25 @@
 
 下面是完整的文件：
 
-    alter database rename file "+DATA/yjsdb/onlinelog/group_1.258.822930965" to "/oradata/yjsdbstb/redo0101.log";
-    alter database rename file "+DATA/yjsdb/onlinelog/group_1.259.822930965" to "/oradata/yjsdbstb/redo0202.log";
-    alter database rename file "+DATA/yjsdb/onlinelog/group_2.260.822930967" to "/oradata/yjsdbstb/redo0201.log";
-    alter database rename file "+DATA/yjsdb/onlinelog/group_2.261.822930967" to "/oradata/yjsdbstb/redo0202.log";
-    alter database rename file "+DATA/yjsdb/onlinelog/group_3.268.822934461" to "/oradata/yjsdbstb/redo0301.log";
-    alter database rename file "+DATA/yjsdb/onlinelog/group_3.269.822934463" to "/oradata/yjsdbstb/redo0302.log";
-    alter database rename file "+DATA/yjsdb/onlinelog/group_4.270.822934463" to "/oradata/yjsdbstb/redo0401.log";
-    alter database rename file "+DATA/yjsdb/onlinelog/group_4.271.822934463" to "/oradata/yjsdbstb/redo0402.log";
+    alter database rename file '+DATA/yjsdb/onlinelog/group_1.258.822930965' to '/oradata/yjsdbstb/redo0101.log';
+    alter database rename file '+DATA/yjsdb/onlinelog/group_1.259.822930965' to '/oradata/yjsdbstb/redo0102.log';
+    alter database rename file '+DATA/yjsdb/onlinelog/group_2.260.822930967' to '/oradata/yjsdbstb/redo0201.log';
+    alter database rename file '+DATA/yjsdb/onlinelog/group_2.261.822930967' to '/oradata/yjsdbstb/redo0202.log';
+    alter database rename file '+DATA/yjsdb/onlinelog/group_3.268.822934461' to '/oradata/yjsdbstb/redo0301.log';
+    alter database rename file '+DATA/yjsdb/onlinelog/group_3.269.822934463' to '/oradata/yjsdbstb/redo0302.log';
+    alter database rename file '+DATA/yjsdb/onlinelog/group_4.270.822934463' to '/oradata/yjsdbstb/redo0401.log';
+    alter database rename file '+DATA/yjsdb/onlinelog/group_4.271.822934463' to '/oradata/yjsdbstb/redo0402.log';
 
-先将上述命令逐条贴到sqlplus窗口执行，若无报错，则可将剩下的指令一起贴上去。
+先将上述命令逐条贴到sqlplus窗口执行。逐条贴到sqlplus窗口时可能会报错，但也能建立对应的日志文件。重新查询v$logfile，可以确定是否真的修改到。
 
-若逐条贴时报错，可重新查询v$logfile，若已修改，则不必理会，继续逐条执行。`报错的原因可能是sqlplus对'+DATA'中的'+'符号敏感，但仍会执行这条语句。`
+这里的报错原因，可能是备份时没有将在线日志拷贝过来，所以修改文件名时找不到相应文件的实体，只能建立一个空文件，然后报错。
+
+`请注意，这里需要逐条贴入命令，而不能批量执行。`
+
+该步骤可以编辑一个sql文件（注意在sql文件里面每次执行语句时都重连sqlplus）来批量执行。
 
 
 ###第7步 重新启动恢复的数据库
 
+    #sqlplus / as sysdba
+    SQL> alter database open resetlogs;
