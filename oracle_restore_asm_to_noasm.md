@@ -20,7 +20,9 @@
     oracle@yjsdb_standby:/oradata/yjsdbstb$ cd /oradata/yjsdbstb
     oracle@yjsdb_standby:/oradata/yjsdbstb$ pwd
     /oradata/yjsdbstb
-    oracle@yjsdb_standby:/oradata/yjsdbstb$rm */*    --保留yjsdbstb的四个文件夹
+    oracle@yjsdb_standby:/oradata/yjsdbstb$rm */*
+
+    ***保留yjsdbstb的四个文件夹***
 
 
 ###第2步 COPY备份文件到到冷备机
