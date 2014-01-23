@@ -1,10 +1,10 @@
 #如何将Oracle数据从ASM环境恢复到Non-ASM环境？
 本文讲述如何将Oracle数据从`RAC+ASM`环境备份的数据恢复到`单机+Non-ASM`的环境。
 
-##第1步 备份
+###第1步 备份
 使用`rman`命令将生产机的数据文件和归档日志一起备份。
 
-##第2步 COPY备份文件到到冷备机
+###第2步 COPY备份文件到到冷备机
 假设备份文件在主机`10.20.2.101`的目录`root/nfcq_1020`：
 
     oracle@yjsdb1:/home/oracle$ cd /oracle/ORABACKUP/database/backupfile
@@ -13,7 +13,7 @@
 
     oracle@yjsdb1:/oracle/ORABACKUP/database/backupfile$ scp * 10.20.1.90:/oracle/ORABACKUP/database/backupfile
 
-##第3步 确保pfile文件`inityjsdb.ora`中已增加路径转换的设置
+###第3步 确保pfile文件`inityjsdb.ora`中已增加路径转换的设置
 
 这是其中关键的两行，用来将AMS环境中的路径批量替换为Non-ASM的路径：
 
@@ -53,7 +53,7 @@
     *.sessions=555
     *.undo_tablespace='UNDOTBS1'
 
-##第4步 恢复数据文件
+###第4步 恢复数据文件
 
     # sqlplus '/as sysdba'
     SQL> startup nomount pfile='/oracle/product/11.2.0/dbhome_1/dbs/inityjsdb.ora';
@@ -72,7 +72,7 @@
        switch datafile all;
     }
 
-##第5步 将数据库恢复到最新的归档节点
+###第5步 将数据库恢复到最新的归档节点
 
 首先从备份文件中查找最新的归档节点
 
@@ -123,7 +123,7 @@
 
 至此，若全程无任何报错，数据就应已正常恢复。
 
-##第6步 修改已恢复数据中的日志文件路径
+###第6步 修改已恢复数据中的日志文件路径
 （若无此步骤，启动时将出现ORA-03113错误）
 
 列出已恢复数据中的日志文件路径：
@@ -165,5 +165,5 @@
 若逐条贴时报错，可重新查询v$logfile，若已修改，则不必理会，继续逐条执行。`报错的原因可能是sqlplus对'+DATA'中的'+'符号敏感，但仍会执行这条语句。`
 
 
-第7步 重新启动恢复的数据库
+###第7步 重新启动恢复的数据库
 
