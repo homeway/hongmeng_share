@@ -1,4 +1,4 @@
-#如何将Oracle数据从ASM环境恢复到Non-ASM环境？
+#从ASM恢复oracle到Non-ASM
 本文讲述如何将Oracle数据从`RAC+ASM`环境备份的数据恢复到`单机+Non-ASM`的环境。
 
 ###第1步 在SCP之前先删除备份机上的旧的备份文件    
